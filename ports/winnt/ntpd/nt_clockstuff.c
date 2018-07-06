@@ -66,6 +66,7 @@ static UINT wTimerRes;
 BOOL init_randfile();
 
 static long last_Adj = 0;
+static long long last_adj_precise = 0;
 
 #define LS_CORR_INTV_SECS  2   /* seconds to apply leap second correction */
 #define LS_CORR_INTV   ( 1000ul * LS_CORR_INTV_SECS )  
@@ -81,6 +82,7 @@ typedef union ft_ull {
 /* leap second stuff */
 static FT_ULL ls_ft;
 static DWORD ls_time_adjustment;
+static DWORD64 ls_freq_adjustment;
 
 static BOOL winnt_time_initialized = FALSE;
 static BOOL winnt_use_interpolation = FALSE;
@@ -138,12 +140,37 @@ static int		clock_backward_count;
 static BOOL os_ignores_small_adjustment;
 
 /*
+ * os_has_precise_adjustment indicates if SetSystemTimeAdjustmentPrecise
+ * is available.
+ */
+static BOOL os_has_precise_adjustment;
+
+typedef BOOL(WINAPI *PGSTAP)(
+	PDWORD64 lpTimeAdjustment,
+	PDWORD64 lpTimeIncrement,
+	PBOOL lpTimeAdjustmentDisabled
+	);
+static PGSTAP pGetSystemTimeAdjustmentPrecise;
+
+typedef BOOL(WINAPI *PSSTAP)(
+	DWORD64 dwTimeAdjustment,
+	BOOL bTimeAdjustmentDisabled
+	);
+static PSSTAP pSetSystemTimeAdjustmentPrecise;
+
+/*
  * clockperiod is the period used for SetSystemTimeAdjustment 
  * slewing calculations but does not necessarily correspond
  * to the precision of the OS clock.  Prior to Windows Vista
  * (6.0) the two were identical.  In 100ns units.
  */
 static DWORD clockperiod;
+
+/*
+ * clockfreq is the frequency used for SetSystemTimeAdjustmentPrecise
+ * slewing calculations.  In Hz units.
+ */
+static DWORD64 clockfreq;
 
 /*
  * os_clock_precision is the observed precision of the OS
@@ -204,6 +231,7 @@ static DOUBLE ppm_per_adjust_unit;
  * clock within a few hundred PPM of correct frequency.
  */
 static long wintickadj;
+static long long winfreqadj;
 
 static void	choose_interp_counter(void);
 static int	is_qpc_built_on_pcc(void);
@@ -307,6 +335,28 @@ static void init_small_adjustment(void)
 		os_ignores_small_adjustment = TRUE;
 	} else {
 		os_ignores_small_adjustment = FALSE;
+	}
+}
+
+
+/*
+ * init_precise_adjustment - check if SetSystemTimeAdjustmentPrecise
+ *                           is available
+ */
+static void init_precise_adjustment(void) {
+	HANDLE	hDll;
+
+	hDll = LoadLibrary("api-ms-win-core-sysinfo-l1-2-4.dll");
+	pGetSystemTimeAdjustmentPrecise =
+		(PGSTAP)GetProcAddress(hDll, "GetSystemTimeAdjustmentPrecise");
+	pSetSystemTimeAdjustmentPrecise =
+		(PSSTAP)GetProcAddress(hDll, "SetSystemTimeAdjustmentPrecise");
+
+	if (NULL != pGetSystemTimeAdjustmentPrecise
+		&& NULL != pSetSystemTimeAdjustmentPrecise) {
+		os_has_precise_adjustment = TRUE;
+	} else {
+		os_has_precise_adjustment = FALSE;
 	}
 }
 
@@ -474,6 +524,7 @@ adj_systime(
 	u_char		isneg;
 	BOOL		rc;
 	long		TimeAdjustment;
+	long long	freq_adjustment;
 	SYSTEMTIME	st;
 	DWORD		ls_elapsed;
 	FT_ULL		curr_ft;
@@ -503,33 +554,40 @@ adj_systime(
 		adjtime_carry = -adjtime_carry;
 	}
 
-	dtemp = dtemp * 1e6;
+	if (os_has_precise_adjustment) {
+		freq_adjustment = (long long)(-dtemp / (1. + dtemp) * clockfreq +
+			((isneg)
+				? 0.5
+				: -0.5));
 
-	/* 
-	 * dtemp is in micro seconds. NT uses 100 ns units,
-	 * so a unit change in TimeAdjustment corresponds
-	 * to slewing 10 ppm on a 100 Hz system. Calculate
-	 * the number of 100ns units to add, using OS tick
-	 * frequency as per suggestion from Harry Pyle,
-	 * and leave the remainder in dtemp
-	 */
-	TimeAdjustment = (long)(dtemp / ppm_per_adjust_unit +
-				((isneg)
-				     ? -0.5
-				     : 0.5));
-
-	if (os_ignores_small_adjustment) {
+		dtemp -= (double)-freq_adjustment / (clockfreq + freq_adjustment);
+	} else {
 		/*
-		 * As the OS ignores adjustments smaller than 16, we need to
-		 * leave these small adjustments in sys_residual, causing
-		 * the small values to be averaged over time.
+		 * dtemp is in seconds. NT uses 100 ns units,
+		 * so a unit change in TimeAdjustment corresponds
+		 * to slewing 10 ppm on a 100 Hz system. Calculate
+		 * the number of 100ns units to add, using OS tick
+		 * frequency as per suggestion from Harry Pyle,
+		 * and leave the remainder in dtemp
 		 */
-		if (TimeAdjustment > -16 && TimeAdjustment < 16) {
-			TimeAdjustment = 0;
-		}
-	}
+		TimeAdjustment = (long)(dtemp * 1e6 / ppm_per_adjust_unit +
+			((isneg)
+				? -0.5
+				: 0.5));
 
-	dtemp -= TimeAdjustment * ppm_per_adjust_unit;	
+		if (os_ignores_small_adjustment) {
+			/*
+			 * As the OS ignores adjustments smaller than 16, we need to
+			 * leave these small adjustments in sys_residual, causing
+			 * the small values to be averaged over time.
+			 */
+			if (TimeAdjustment > -16 && TimeAdjustment < 16) {
+				TimeAdjustment = 0;
+			}
+		}
+
+		dtemp -= TimeAdjustment * ppm_per_adjust_unit / 1e6;
+	}
 
 
 	/* If a piping-hot close leap second is pending for the end
@@ -571,7 +629,7 @@ adj_systime(
                  * Disarm the leap second, but only if there is one scheduled
                  * and not currently in progress!
                  */
-		if (ls_ft.ull != 0 && ls_time_adjustment == 0) {
+		if (ls_ft.ull != 0 && ls_time_adjustment == 0 && ls_freq_adjustment == 0) {
 			ls_ft.ull = 0;
 			msyslog(LOG_NOTICE, "Leap second announcement disarmed");
 		}
@@ -585,11 +643,15 @@ adj_systime(
 	 * adjustments.
 	 */
 	if (ls_ft.ull != 0) {
-		if (0 == ls_time_adjustment) { /* has not yet been scheduled */
+		if (0 == ls_time_adjustment && 0 == ls_freq_adjustment) { /* has not yet been scheduled */
 	 		GetSystemTimeAsFileTime(&curr_ft.ft);
 			if (curr_ft.ull >= ls_ft.ull) {
 				ls_ft.ull = _UI64_MAX; /* guard against second schedule */
-				ls_time_adjustment = clockperiod / LS_CORR_INTV_SECS;
+				if (os_has_precise_adjustment) {
+					ls_freq_adjustment = clockfreq / (LS_CORR_INTV_SECS - 1);
+				} else {
+					ls_time_adjustment = clockperiod / LS_CORR_INTV_SECS;
+				}
 				ls_start_tick = GetTickCount();
 				msyslog(LOG_NOTICE, "Started leap second insertion.");
 			}
@@ -598,9 +660,10 @@ adj_systime(
 			ls_elapsed = GetTickCount() - ls_start_tick; 
 		}
 
-		if (ls_time_adjustment != 0) {  /* leap second adjustment is currently active */
+		if (ls_time_adjustment != 0 || ls_freq_adjustment != 0) {  /* leap second adjustment is currently active */
 			if (ls_elapsed > (LS_CORR_INTV - LS_CORR_LIMIT)) {
 				ls_time_adjustment = 0;  /* leap second adjustment done */
+				ls_freq_adjustment = 0;
 				msyslog(LOG_NOTICE, "Finished leap second insertion.");
 			}
 
@@ -609,30 +672,56 @@ adj_systime(
 			 * the interpolation function which is based on the performance 
 			 * counter does not account for the slew.
 			 */
-			TimeAdjustment -= ls_time_adjustment;
+			if (os_has_precise_adjustment) {
+				freq_adjustment += ls_freq_adjustment;
+			} else {
+				TimeAdjustment -= ls_time_adjustment;
+			}
 		}
 	}
 
+	sys_residual = dtemp;
 
-	sys_residual = dtemp / 1e6;
-	DPRINTF(3, ("adj_systime: %.9f -> %.9f residual %.9f", 
-		    now, 1e-6 * (TimeAdjustment * ppm_per_adjust_unit),
-		    sys_residual));
-	if (0. == adjtime_carry)
-		DPRINTF(3, ("\n"));
-	else
-		DPRINTF(3, (" adjtime %.9f\n", adjtime_carry));
+	if (os_has_precise_adjustment) {
+		DPRINTF(3, ("adj_systime: %.9f -> %.9f residual %.9f",
+			now, (double)-freq_adjustment / (clockfreq + freq_adjustment),
+			sys_residual));
+		if (0. == adjtime_carry)
+			DPRINTF(3, ("\n"));
+		else
+			DPRINTF(3, (" adjtime %.9f\n", adjtime_carry));
 
-	/* only adjust the clock if adjustment changes */
-	TimeAdjustment += wintickadj;
-	if (last_Adj != TimeAdjustment) {
-		last_Adj = TimeAdjustment;
-		DPRINTF(2, ("SetSystemTimeAdjustment(%+ld)\n", TimeAdjustment));
-		rc = SetSystemTimeAdjustment(clockperiod + TimeAdjustment, FALSE);
-		if (!rc)
-			msyslog(LOG_ERR, "Can't adjust time: %m");
+		/* only adjust the clock if adjustment changes */
+		freq_adjustment += winfreqadj;
+		if (last_adj_precise != freq_adjustment) {
+			last_adj_precise = freq_adjustment;
+			DPRINTF(2, ("SetSystemTimeAdjustmentPrecise(%+lld)\n", freq_adjustment));
+			rc = (*pSetSystemTimeAdjustmentPrecise)(clockfreq + freq_adjustment, FALSE);
+			if (!rc)
+				msyslog(LOG_ERR, "Can't adjust time: %m");
+		} else {
+			rc = TRUE;
+		}
 	} else {
-		rc = TRUE;
+		DPRINTF(3, ("adj_systime: %.9f -> %.9f residual %.9f",
+			now, 1e-6 * (TimeAdjustment * ppm_per_adjust_unit),
+			sys_residual));
+		if (0. == adjtime_carry)
+			DPRINTF(3, ("\n"));
+		else
+			DPRINTF(3, (" adjtime %.9f\n", adjtime_carry));
+
+		/* only adjust the clock if adjustment changes */
+		TimeAdjustment += wintickadj;
+		if (last_Adj != TimeAdjustment) {
+			last_Adj = TimeAdjustment;
+			DPRINTF(2, ("SetSystemTimeAdjustment(%+ld)\n", TimeAdjustment));
+			rc = SetSystemTimeAdjustment(clockperiod + TimeAdjustment, FALSE);
+			if (!rc)
+				msyslog(LOG_ERR, "Can't adjust time: %m");
+		} else {
+			rc = TRUE;
+		}
 	}
 
 	return rc;
@@ -649,6 +738,7 @@ init_winnt_time(void)
 	TIMECAPS tc;
 	BOOL noslew;
 	DWORD adjclockperiod;
+	DWORD64 adjclockfreq;
 	LARGE_INTEGER Freq;
 	FT_ULL initial_hectonanosecs;
 	FT_ULL next_hectonanosecs;
@@ -695,6 +785,7 @@ init_winnt_time(void)
 #pragma warning(pop)
 
 	init_small_adjustment();
+	init_precise_adjustment();
         leapsec_electric(TRUE);
 
 	/*
@@ -747,29 +838,55 @@ init_winnt_time(void)
 	if (-1 == setpriority(PRIO_PROCESS, 0, NTP_PRIO))
 		exit(-1);
 
-	/* Determine the existing system time slewing */
-	if (!GetSystemTimeAdjustment(&adjclockperiod, &clockperiod, &noslew)) {
-		msyslog(LOG_ERR, "GetSystemTimeAdjustment failed: %m");
-		exit(-1);
-	}
+	if (os_has_precise_adjustment) {
+		/* Determine the existing system time slewing */
+		if (!(*pGetSystemTimeAdjustmentPrecise)(&adjclockfreq, &clockfreq, &noslew)) {
+			msyslog(LOG_ERR, "GetSystemTimeAdjustmentPrecise failed: %m");
+			exit(-1);
+		}
 
-	/*
-	 * If there is no slewing before ntpd, adjclockperiod and clockperiod
-	 * will be equal.  Any difference is carried into adj_systime's first
-	 * pass as the previous adjustment.
-	 */
-	last_Adj = adjclockperiod - clockperiod;
-	
-	if (last_Adj)
-		msyslog(LOG_INFO, 
-			"Clock interrupt period %.3f msec "
-			"(startup slew %.1f usec/period)",
-			clockperiod / 1e4,
-			last_Adj / 10.);
-	else
-		msyslog(LOG_INFO, 
-			"Clock interrupt period %.3f msec", 
-			clockperiod / 1e4);
+		/*
+		 * If there is no slewing before ntpd, adjclockfreq and clockfreq
+		 * will be equal.  Any difference is carried into adj_systime's first
+		 * pass as the previous adjustment.
+		 */
+		last_adj_precise = adjclockfreq - clockfreq;
+
+		if (last_adj_precise)
+			msyslog(LOG_INFO,
+				"Clock update frequency %.3f MHz "
+				"(startup slew %lld Hz)",
+				clockfreq / 1e6,
+				last_adj_precise);
+		else
+			msyslog(LOG_INFO,
+				"Clock update frequency %.3f MHz",
+				clockfreq / 1e6);
+	} else {
+		/* Determine the existing system time slewing */
+		if (!GetSystemTimeAdjustment(&adjclockperiod, &clockperiod, &noslew)) {
+			msyslog(LOG_ERR, "GetSystemTimeAdjustment failed: %m");
+			exit(-1);
+		}
+
+		/*
+		 * If there is no slewing before ntpd, adjclockperiod and clockperiod
+		 * will be equal.  Any difference is carried into adj_systime's first
+		 * pass as the previous adjustment.
+		 */
+		last_Adj = adjclockperiod - clockperiod;
+
+		if (last_Adj)
+			msyslog(LOG_INFO,
+				"Clock interrupt period %.3f msec "
+				"(startup slew %.1f usec/period)",
+				clockperiod / 1e4,
+				last_Adj / 10.);
+		else
+			msyslog(LOG_INFO,
+				"Clock interrupt period %.3f msec",
+				clockperiod / 1e4);
+	}
 
 	/*
 	 * Calculate the time adjustment resulting from incrementing
@@ -779,14 +896,25 @@ init_winnt_time(void)
 
 	pch = getenv("NTPD_TICKADJ_PPM");
 	if (pch != NULL && 1 == sscanf(pch, "%lf", &adjppm)) {
-		rawadj = adjppm / ppm_per_adjust_unit;
-		rawadj += (rawadj < 0)
-			      ? -0.5
-			      : 0.5;
-		wintickadj = (long)rawadj;
-		msyslog(LOG_INFO,
-			"Using NTPD_TICKADJ_PPM %+g ppm (%+ld)",
-			adjppm, wintickadj);
+		if (os_has_precise_adjustment) {
+			rawadj = -adjppm / (1e6 + adjppm) * clockfreq;
+			rawadj += (rawadj < 0)
+				? -0.5
+				: 0.5;
+			winfreqadj = (long long)rawadj;
+			msyslog(LOG_INFO,
+				"Using NTPD_TICKADJ_PPM %+g ppm (%+ld Hz)",
+				adjppm, winfreqadj);
+		} else {
+			rawadj = adjppm / ppm_per_adjust_unit;
+			rawadj += (rawadj < 0)
+				? -0.5
+				: 0.5;
+			wintickadj = (long)rawadj;
+			msyslog(LOG_INFO,
+				"Using NTPD_TICKADJ_PPM %+g ppm (%+ld)",
+				adjppm, wintickadj);
+		}
 	}
 
 	/* get the performance counter ticks per second */
@@ -885,13 +1013,16 @@ reset_winnt_time(void)
 	 * disable our slewing and return clock discipline to the 
 	 * kernel.  Similarly if we are not yet synchronized, 
 	 * our current slew may not be a good ongoing trim.
+	 * If the Windows version ignores small time adjustments,
+	 * we also don't want to continue that large slew.
 	 * Otherwise, our leave in place the last SetSystemTimeAdjustment
 	 * as an ongoing frequency correction, better than nothing.
 	 * TODO:
 	 * Verify this will not call SetSystemTimeAdjustment if
 	 * ntpd is running in ntpdate mode.
 	 */
-	if (sys_leap == LEAP_NOTINSYNC || ls_time_adjustment != 0)
+	if (os_ignores_small_adjustment || sys_leap == LEAP_NOTINSYNC
+		|| ls_time_adjustment != 0 || ls_freq_adjustment != 0)
 		SetSystemTimeAdjustment(0, TRUE);	 
 
 	/*
