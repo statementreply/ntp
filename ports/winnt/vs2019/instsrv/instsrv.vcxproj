@@ -27,13 +27,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2789A62E-3F46-44F1-AAF0-816CD23C2911}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <ProjectGuid>{C3534C4D-6DF1-498E-9904-4337878A1515}</ProjectGuid>
+    <RootNamespace>instsrv</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -45,7 +46,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -57,13 +58,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -106,11 +107,11 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
-      <TypeLibraryName>$(IntDir)ntpdate.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)Instsrv.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\ntpdate;..\..\..\..\ntpdate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\instsrv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -126,12 +127,12 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseXP|Win32'">
     <Midl>
-      <TypeLibraryName>$(IntDir)ntpdate.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)Instsrv.tlb</TypeLibraryName>
       <HeaderFileName>
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\ntpdate;..\..\..\..\ntpdate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\instsrv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -147,11 +148,12 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
-      <TypeLibraryName>$(IntDir)ntpdate.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)Instsrv.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\ntpdate;..\..\..\..\ntpdate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>..\..\instsrv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -167,12 +169,13 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugXP|Win32'">
     <Midl>
-      <TypeLibraryName>$(IntDir)ntpdate.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)Instsrv.tlb</TypeLibraryName>
       <HeaderFileName>
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\ntpdate;..\..\..\..\ntpdate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>..\..\instsrv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -189,11 +192,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
-      <TypeLibraryName>$(IntDir)ntpdate.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)Instsrv.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\ntpdate;..\..\..\..\ntpdate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\instsrv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -210,11 +213,12 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
-      <TypeLibraryName>$(IntDir)ntpdate.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)Instsrv.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\ntpdate;..\..\..\..\ntpdate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>..\..\instsrv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -229,24 +233,8 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\ntpdate\ntpdate.c" />
+    <ClCompile Include="..\..\instsrv\instsrv.c" />
     <ClCompile Include="version.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\..\include\ntp.h" />
-    <ClInclude Include="..\..\..\..\include\ntp_fp.h" />
-    <ClInclude Include="..\..\..\..\include\ntp_io.h" />
-    <ClInclude Include="..\..\..\..\include\ntp_machine.h" />
-    <ClInclude Include="..\..\..\..\include\ntp_net.h" />
-    <ClInclude Include="..\..\..\..\include\ntp_select.h" />
-    <ClInclude Include="..\..\..\..\include\ntp_stdlib.h" />
-    <ClInclude Include="..\..\..\..\include\ntp_string.h" />
-    <ClInclude Include="..\..\..\..\include\ntp_syslog.h" />
-    <ClInclude Include="..\..\..\..\include\ntp_unixtime.h" />
-    <ClInclude Include="..\..\..\..\lib\isc\win32\include\isc\net.h" />
-    <ClInclude Include="..\..\..\..\ntpdate\ntpdate.h" />
-    <ClInclude Include="..\..\include\config.h" />
-    <ClInclude Include="..\..\include\syslog.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\..\..\packageinfo.sh">
@@ -254,33 +242,27 @@
       <Message Condition="'$(Configuration)|$(Platform)'=='DebugXP|Win32'">Using NT Shell Script to generate version.c</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\scripts\mkver.bat -P $(ProjectName)
 </Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DebugXP|Win32'">call ..\..\scripts\mkver.bat -P $(ProjectName)
+      <Command Condition="'$(Configuration)|$(Platform)'=='DebugXP|Win32'">..\..\scripts\mkver.bat -P $(ProjectName)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\version.c;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='DebugXP|Win32'">.\version.c;%(Outputs)</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Using NT Shell Script to generate version.c</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">call ..\..\scripts\mkver.bat -P $(ProjectName)
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\..\scripts\mkver.bat -P $(ProjectName)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\version.c;%(Outputs)</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Using NT Shell Script to generate version.c</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='ReleaseXP|Win32'">Using NT Shell Script to generate version.c</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">call ..\..\scripts\mkver.bat -P $(ProjectName)
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\scripts\mkver.bat -P $(ProjectName)
 </Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='ReleaseXP|Win32'">call ..\..\scripts\mkver.bat -P $(ProjectName)
+      <Command Condition="'$(Configuration)|$(Platform)'=='ReleaseXP|Win32'">..\..\scripts\mkver.bat -P $(ProjectName)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\version.c;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='ReleaseXP|Win32'">.\version.c;%(Outputs)</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Using NT Shell Script to generate version.c</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call ..\..\scripts\mkver.bat -P $(ProjectName)
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\..\scripts\mkver.bat -P $(ProjectName)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\version.c;%(Outputs)</Outputs>
     </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\libntp\libntp.vcxproj">
-      <Project>{400fbfcb-462e-40d0-b06b-3b74e3fffd00}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
