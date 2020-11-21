@@ -332,6 +332,15 @@
     <ClCompile Include="..\..\..\..\libntp\libssl_compat.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\libntp\ntp_calgps.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libntp\timespecops.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libntp\xsbprintf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\sntp\libopts\ag-char-map.h">
@@ -575,6 +584,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\msvc_ssl_autolib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ntp_calgps.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
