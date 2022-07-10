@@ -117,6 +117,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\ntpd;..\..\..\..\ntpd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -160,6 +161,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\ntpd;..\..\..\..\ntpd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -204,6 +206,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\ntpd;..\..\..\..\ntpd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -226,6 +229,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\ntpd;..\..\..\..\ntpd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>

@@ -121,6 +121,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\ntpd;..\..\..\..\ntpd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)keyword-gen.exe</OutputFile>
@@ -148,6 +149,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\ntpd;..\..\..\..\ntpd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)keyword-gen.exe</OutputFile>
@@ -160,6 +162,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\ntpd;..\..\..\..\ntpd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)keyword-gen.exe</OutputFile>
@@ -187,6 +190,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\ntpd;..\..\..\..\ntpd;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)keyword-gen.exe</OutputFile>
