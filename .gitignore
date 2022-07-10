@@ -1,8 +1,11 @@
 ## Generated files
 .version
 version.c
-messages.h
-messages.rc
+/ntpd/keyword-gen-utd
+/ntpd/ntp_keyword.h
+/ports/winnt/libntp/messages.h
+/ports/winnt/libntp/messages.rc
+/ports/winnt/libntp/MSG00001.bin
 
 
 ## Ignore Visual Studio temporary files, build results, and
