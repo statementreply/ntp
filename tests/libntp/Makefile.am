@@ -1,16 +1,26 @@
 NULL =
 BUILT_SOURCES =
 CLEANFILES =
+DISTCLEANFILES =
 
 std_unity_list =	 						\
 	$(abs_top_srcdir)/sntp/unity/auto/generate_test_runner.rb	\
 	$(abs_srcdir)/testconf.yml					\
 	$(NULL)
 
+#
+# Note: the rules to generate run-c_filename.c from c_filename.c below
+#	use the gmake $< construct for the first prerequisite, which
+#	does not work on FreeBSD make.  Use gmake when adding a new
+#	test source file, and check in the resulting run-*.c.
+#
+
 run_unity =	ruby $(std_unity_list)
 
 EXTRA_DIST =				\
 	testconf.yml			\
+	data/ntp.keys			\
+	data/mills,david-03.jpg		\
 	$(NULL)
 
 check_PROGRAMS =		\
@@ -25,6 +35,7 @@ check_PROGRAMS =		\
 	test-calyearstart	\
 	test-clocktime		\
 	test-decodenetnum	\
+	test-digests		\
 	test-hextoint		\
 	test-hextolfp		\
 	test-humandate		\
@@ -37,6 +48,7 @@ check_PROGRAMS =		\
 	test-numtohost		\
 	test-octtoint		\
 	test-prettydate		\
+	test-realpath		\
 	test-recvbuff		\
 	test-refidsmear		\
 	test-refnumtoa		\
@@ -56,13 +68,13 @@ check_PROGRAMS =		\
 	test-ymd2yd		\
 	$(NULL)
 
-LDADD =					\
+LDADD =						\
 	$(top_builddir)/sntp/unity/libunity.a	\
-	$(top_builddir)/libntp/libntp.a	\
-	$(LDADD_LIBNTP)			\
-	$(PTHREAD_LIBS)			\
-	$(LDADD_NTP)			\
-	$(LIBM)				\
+	$(top_builddir)/libntp/libntp.a		\
+	$(LDADD_LIBNTP)				\
+	$(PTHREAD_LIBS)				\
+	$(LDADD_NTP)				\
+	$(LIBM)					\
 	$(NULL)
 
 AM_CFLAGS  = $(CFLAGS_NTP)
@@ -90,6 +102,7 @@ BUILT_SOURCES +=			\
 	$(srcdir)/run-calyearstart.c	\
 	$(srcdir)/run-clocktime.c	\
 	$(srcdir)/run-decodenetnum.c	\
+	$(srcdir)/run-digests.c		\
 	$(srcdir)/run-hextoint.c	\
 	$(srcdir)/run-hextolfp.c	\
 	$(srcdir)/run-humandate.c	\
@@ -102,6 +115,7 @@ BUILT_SOURCES +=			\
 	$(srcdir)/run-numtohost.c	\
 	$(srcdir)/run-octtoint.c	\
 	$(srcdir)/run-prettydate.c	\
+	$(srcdir)/run-realpath.c	\
 	$(srcdir)/run-recvbuff.c	\
 	$(srcdir)/run-refidsmear.c	\
 	$(srcdir)/run-refnumtoa.c	\
@@ -260,6 +274,22 @@ $(srcdir)/run-decodenetnum.c: $(srcdir)/decodenetnum.c $(std_unity_list)
 
 ###
 
+test_digests_SOURCES =		\
+	digests.c		\
+	run-digests.c		\
+	$(NULL)
+
+$(srcdir)/run-digests.c: $(srcdir)/digests.c $(std_unity_list)
+	$(run_unity) $< $@
+
+nodist_test_digests_SOURCES = srcdir.c
+CLEANFILES += srcdir.c
+
+srcdir.c: Makefile
+	$(AM_V_GEN)echo 'const char srcdir[] = "$(srcdir)";' >$@
+
+###
+
 test_hextoint_SOURCES =		\
 	hextoint.c		\
 	run-hextoint.c		\
@@ -378,6 +408,16 @@ test_prettydate_SOURCES =	\
 	$(NULL)
 
 $(srcdir)/run-prettydate.c: $(srcdir)/prettydate.c $(std_unity_list)
+	$(run_unity) $< $@
+
+###
+
+test_realpath_SOURCES =		\
+	realpath.c		\
+	run-realpath.c		\
+	$(NULL)
+
+$(srcdir)/run-realpath.c: $(srcdir)/realpath.c $(std_unity_list)
 	$(run_unity) $< $@
 
 ###
@@ -566,23 +606,7 @@ if !NTP_CROSSCOMPILE
 TESTS += $(check_PROGRAMS)
 endif
 
-## check-libntp.mf - automake fragment
-## slightly adapted for deeper directory
-
-BUILT_SOURCES	+= check-libntp check-libunity
-CLEANFILES	+= check-libntp check-libunity
-
-check-libntp: ../../libntp/libntp.a
-	@echo stamp > $@
-
-../../libntp/libntp.a:
-	cd ../../libntp && $(MAKE) $(AM_MAKEFLAGS) libntp.a
-
-check-libunity: ../../sntp/unity/libunity.a
-	@echo stamp > $@
-
-../../sntp/unity/libunity.a:
-	cd ../../sntp/unity && $(MAKE) $(AM_MAKEFLAGS) libunity.a
-
+include $(top_srcdir)/check-libntp.mf
+include $(top_srcdir)/check-libunity.mf
 include $(top_srcdir)/depsver.mf
 include $(top_srcdir)/includes.mf
