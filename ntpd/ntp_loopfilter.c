@@ -39,13 +39,13 @@
 #define CLOCK_MINSTEP	300.	/* default stepout threshold (s) */
 #define CLOCK_PANIC	1000.	/* default panic threshold (s) */
 #define	CLOCK_PHI	15e-6	/* max frequency error (s/s) */
-#define CLOCK_PLL	16.	/* PLL loop gain (log2) */
-#define CLOCK_AVG	8.	/* parameter averaging constant */
+#define CLOCK_PLL	8.	/* PLL loop gain (log2) */
+#define CLOCK_AVG	8	/* parameter averaging window */
 #define CLOCK_FLL	.25	/* FLL loop gain */
 #define	CLOCK_FLOOR	.0005	/* startup offset floor (s) */
 #define	CLOCK_ALLAN	11	/* Allan intercept (log2 s) */
 #define CLOCK_LIMIT	30	/* poll-adjust threshold */
-#define CLOCK_PGATE	4.	/* poll-adjust gate */
+#define CLOCK_PGATE	1.4	/* poll-adjust gate */
 #define PPS_MAXAGE	120	/* kernel pps signal timeout (s) */
 #define	FREQTOD(x)	((x) / 65536e6) /* NTP to double */
 #define	DTOFREQ(x)	((int32)((x) * 65536e6)) /* double to NTP */
@@ -131,6 +131,11 @@ static double direct_freq(double); /* direct set frequency */
 static void set_freq(double);	/* set frequency */
 static char relative_path[PATH_MAX + 1]; /* relative path per recursive make */
 static char *this_file = NULL;
+
+static int clock_jitter_num;
+static double clock_jitter_squares[CLOCK_AVG];
+static int clock_stability_num;
+static double clock_stability_squares[CLOCK_AVG];
 
 #ifdef KERNEL_PLL
 static struct timex ntv;	/* ntp_adjtime() parameters */
@@ -228,6 +233,7 @@ init_loopfilter(void)
 	 */
 	sys_poll = ntp_minpoll;
 	clock_jitter = LOGTOD(sys_precision);
+	clock_jitter_num = 0;
 	freq_cnt = (int)clock_minstep;
 }
 
@@ -462,6 +468,7 @@ local_clock(
 	double	clock_frequency; /* clock frequency */
 	double	dtemp, etemp;	/* double temps */
 	char	tbuf[80];	/* report buffer */
+	int i;
 
 	(void)ntp_adj_ret; /* not always used below... */
 	/*
@@ -644,6 +651,7 @@ local_clock(
 			reinit_timer();
 			tc_counter = 0;
 			clock_jitter = LOGTOD(sys_precision);
+			clock_jitter_num = 0;
 			rval = 2;
 			if (state == EVNT_NSET) {
 				rstclock(EVNT_FREQ, 0);
@@ -655,14 +663,21 @@ local_clock(
 	} else {
 		/*
 		 * The offset is less than the step threshold. Calculate
-		 * the jitter as the exponentially weighted offset
-		 * differences.
+		 * the jitter as the RMS offset differences.
 		 */
-		etemp = SQUARE(clock_jitter);
 		dtemp = SQUARE(max(fabs(fp_offset - last_offset),
 		    LOGTOD(sys_precision)));
-		clock_jitter = SQRT(etemp + (dtemp - etemp) /
-		    CLOCK_AVG);
+		if (clock_jitter_num < CLOCK_AVG) {
+			++clock_jitter_num;
+		}
+		memmove(clock_jitter_squares + 1, clock_jitter_squares,
+		    sizeof(double) * (clock_jitter_num - 1));
+		clock_jitter_squares[0] = dtemp;
+		etemp = dtemp;
+		for (i = 1; i < clock_jitter_num; ++i) {
+			etemp += clock_jitter_squares[i];
+		}
+		clock_jitter = SQRT(etemp / clock_jitter_num);
 		switch (state) {
 
 		/*
@@ -718,7 +733,7 @@ local_clock(
 				 * FLL becomes effective.
 				 */
 				etemp = min(ULOGTOD(allan_xpt), mu);
-				dtemp = 4 * CLOCK_PLL * ULOGTOD(sys_poll);
+				dtemp = 2 * CLOCK_PLL * ULOGTOD(sys_poll);
 				clock_frequency +=
 				    fp_offset * etemp / (dtemp * dtemp);
 			}
@@ -859,12 +874,20 @@ local_clock(
 		drift_comp = clock_frequency;
 
 	/*
-	 * Calculate the wander as the exponentially weighted RMS
-	 * frequency differences. Record the change for the frequency
-	 * file update.
+	 * Calculate the wander as RMS frequency differences.
+	 * Record the change for the frequency file update.
 	 */
-	etemp = SQUARE(clock_stability);
-	clock_stability = SQRT(etemp + (dtemp - etemp) / CLOCK_AVG);
+	if (clock_stability_num < CLOCK_AVG) {
+		++clock_stability_num;
+	}
+	memmove(clock_stability_squares + 1, clock_stability_squares,
+	    sizeof(double) * (clock_stability_num - 1));
+	clock_stability_squares[0] = dtemp;
+	etemp = dtemp;
+	for (i = 1; i < clock_stability_num; ++i) {
+		etemp += clock_stability_squares[i];
+	}
+	clock_stability = SQRT(etemp / clock_stability_num);
 
 	/*
 	 * Here we adjust the time constant by comparing the current
