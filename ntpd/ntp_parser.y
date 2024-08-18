@@ -214,6 +214,7 @@
 %token	<Integer>	T_Pool
 %token	<Integer>	T_Port
 %token	<Integer>	T_PpsData
+%token	<Integer>	T_Preconn
 %token	<Integer>	T_Preempt
 %token	<Integer>	T_Prefer
 %token	<Integer>	T_Protostats
@@ -500,6 +501,7 @@ option_flag_keyword
 	|	T_Burst
 	|	T_Iburst
 	|	T_Noselect
+	|	T_Preconn
 	|	T_Preempt
 	|	T_Prefer
 	|	T_True
@@ -1475,10 +1477,10 @@ pollskew_spec
 	;
 
 pollskew_cycle
-	:	T_Integer 
-		{ 
-			$$ = ($1 >= NTP_MINPOLL && $1 <= NTP_MAXPOLL) 
-				? create_attr_rval($1, 0, 0) 
+	:	T_Integer
+		{
+			$$ = ($1 >= NTP_MINPOLL && $1 <= NTP_MAXPOLL)
+				? create_attr_rval($1, 0, 0)
 				: NULL;
 		}
 	|	T_Default { $$ = create_attr_rval(-1, 0, 0); }

@@ -314,6 +314,7 @@ ntp_monitor(
 	)
 {
 	l_fp		interval_fp;
+	l_fp		interval_n_fp;
 	struct pkt *	pkt;
 	mon_entry *	mon;
 	mon_entry *	oldest;
@@ -323,6 +324,7 @@ ntp_monitor(
 	u_char		mode;
 	u_char		version;
 	int		interval;
+	int		interval_n;
 	int		head;		/* headway increment */
 	int		leak;		/* new headway */
 	int		limit;		/* average threshold */
@@ -354,7 +356,17 @@ ntp_monitor(
 		/* add one-half second to round up */
 		L_ADDUF(&interval_fp, 0x80000000);
 		interval = interval_fp.l_i;
+		if (mon->count >= NTP_PRECONN) {
+			interval_n_fp = rbufp->recv_time;
+			L_SUB(&interval_n_fp, &mon->last_n[NTP_PRECONN - 1]);
+			/* add one-half second to round up */
+			L_ADDUF(&interval_n_fp, 0x80000000);
+			interval_n = interval_n_fp.l_i;
+		}
+		memmove(mon->last_n + 1, mon->last_n,
+		    sizeof(*mon->last_n) * min(mon->count, NTP_PRECONN - 1));
 		mon->last = rbufp->recv_time;
+		mon->last_n[0] = mon->last;
 		NSRCPORT(&mon->rmtadr) = NSRCPORT(&rbufp->recv_srcadr);
 		mon->count++;
 		restrict_mask = flags;
@@ -373,7 +385,7 @@ ntp_monitor(
 		mon->leak = max(0, mon->leak);
 		head = 1 << ntp_minpoll;
 		leak = mon->leak + head;
-		limit = NTP_SHIFT * head;
+		limit = NTP_SHIFT * NTP_PRECONN * head;
 
 		DPRINTF(2, ("MRU: interval %d headway %d limit %d\n",
 			    interval, leak, limit));
@@ -392,7 +404,8 @@ ntp_monitor(
 		 * This rate-limits the KoDs to no more often than the
 		 * average headway.
 		 */
-		if (interval + 1 >= ntp_minpkt && leak < limit) {
+		if (   (mon->count <= NTP_PRECONN || interval_n + 1 >= ntp_minpkt)
+		    && leak < limit) {
 			mon->leak = leak - 2;
 			restrict_mask &= ~(RES_LIMITED | RES_KOD);
 		} else if (mon->leak < limit) {
@@ -479,6 +492,7 @@ ntp_monitor(
 	mru_entries++;
 	mru_peakentries = max(mru_peakentries, mru_entries);
 	mon->last = rbufp->recv_time;
+	mon->last_n[0] = mon->last;
 	mon->first = mon->last;
 	mon->count = 1;
 	mon->flags = ~(RES_LIMITED | RES_KOD) & flags;

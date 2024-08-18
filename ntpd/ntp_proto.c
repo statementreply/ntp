@@ -485,6 +485,15 @@ transmit(
 	 * designed to back off whenever possible to minimize network
 	 * traffic.
 	 */
+	if ((peer->flags & FLAG_PRECONN) && peer->hmode != MODE_BCLIENT) {
+		peer->preconn++;
+		if (peer->preconn > 1) {
+			peer->outdate = current_time;
+			peer_xmit(peer);
+			return;
+		}
+	}
+
 	if (peer->burst == 0) {
 		u_char oreach;
 
@@ -734,7 +743,7 @@ receive(
 		sys_badlength++;
 		return;				/* bogus length */
 	}
-	
+
 	hisleap = PKT_LEAP(pkt->li_vn_mode);
 	hisstratum = PKT_TO_STRATUM(pkt->stratum);
 	DEBUG_INSIST(0 != hisstratum);	/* paranoia check PKT_TO_STRATUM result */
@@ -808,7 +817,7 @@ receive(
 	 * 0 probably indicates a data-minimized packet.
 	 * A valid poll interval is required for RATEKISS, where
 	 * a value of 0 is not allowed.  We check for this below.
-	 * 
+	 *
 	 * There might be arguments against this check.  If you have
 	 * any of these arguments, please let us know.
 	 *
@@ -2132,7 +2141,7 @@ receive(
 			/* Should we set TEST2 if we decide to try xleave? */
 			peer->bogusorg++;
 			peer->flash |= TEST2;	/* bogus */
-			msyslog(LOG_INFO, 
+			msyslog(LOG_INFO,
 				"duplicate or replay: org 0x%x.%08x does not match 0x%x.%08x from %s@%s",
 				ntohl(pkt->org.l_ui), ntohl(pkt->org.l_uf),
 				peer->aorg.l_ui, peer->aorg.l_uf,
@@ -2521,6 +2530,20 @@ receive(
 #endif	/* AUTOKEY */
 
 	/*
+	 * If this is a preconnection response, discard this packet and send
+	 * another packet immediately.
+	 */
+	if (peer->flags & FLAG_PRECONN) {
+		if (peer->preconn < NTP_PRECONN) {
+			transmit(peer);
+			return;
+		} else {
+			peer->preconn = 0;
+		}
+	}
+
+
+	/*
 	 * The dance is complete and the flash bits have been lit. Toss
 	 * the packet over the fence for processing, which may light up
 	 * more flashers. Leave if the packet is not good.
@@ -2534,7 +2557,7 @@ receive(
 	/* [bug 3592] Update poll. Ideally this should not happen in a
 	 * receive branch, but too much is going on here... at least we
 	 * do it only if the packet was good!
-	 */	
+	 */
 	poll_update(peer, peer->hpoll, (peer->hmode == MODE_CLIENT));
 
 	/*
@@ -3601,11 +3624,11 @@ clock_select(void)
 		}
 
 		/*
-		 * If we have never been synchronised, look for any peer 
-		 * which has ever been synchronised and pick the one which 
-		 * has the lowest root distance. This can be used as a last 
-		 * resort if all else fails. Once we get an initial sync 
-		 * with this peer, sys_reftime gets set and so this 
+		 * If we have never been synchronised, look for any peer
+		 * which has ever been synchronised and pick the one which
+		 * has the lowest root distance. This can be used as a last
+		 * resort if all else fails. Once we get an initial sync
+		 * with this peer, sys_reftime gets set and so this
 		 * function becomes disabled.
 		 */
 		if (L_ISZERO(&sys_reftime)) {
@@ -4219,7 +4242,9 @@ peer_xmit(
 			sys_ttl[(peer->ttl >= sys_ttlmax) ? sys_ttlmax : peer->ttl],
 			&xpkt, sendlen);
 		peer->sent++;
-		peer->throttle += (1 << peer->minpoll) - 2;
+		if (peer->preconn <= 1) {
+			peer->throttle += (1 << peer->minpoll) - 2;
+		}
 
 		/*
 		 * Capture a-posteriori timestamps
@@ -4530,7 +4555,9 @@ peer_xmit(
 		sys_ttl[(peer->ttl >= sys_ttlmax) ? sys_ttlmax : peer->ttl],
 		&xpkt, sendlen);
 	peer->sent++;
-	peer->throttle += (1 << peer->minpoll) - 2;
+	if (peer->preconn <= 1) {
+		peer->throttle += (1 << peer->minpoll) - 2;
+	}
 
 	/*
 	 * Capture a-posteriori timestamps

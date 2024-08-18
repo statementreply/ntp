@@ -316,6 +316,7 @@ struct resp_pkt {
 #define	INFO_FLAG_SEL_CANDIDATE	0x40
 #define	INFO_FLAG_SHORTLIST	0x80
 #define	INFO_FLAG_IBURST	0x100
+#define INFO_FLAG_PRECONN	0x8000
 
 /*
  * Flags in the system information returns
@@ -616,6 +617,7 @@ struct conf_peer {
 #define CONF_FLAG_IBURST	0x08
 #define CONF_FLAG_NOSELECT	0x10
 #define CONF_FLAG_SKEY		0x20
+#define CONF_FLAG_PRECONN	0x80
 
 /*
  * Structure for passing peer deletion information.  Currently

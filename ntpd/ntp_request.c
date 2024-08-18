@@ -1034,6 +1034,8 @@ peer_stats (
 		    ip->flags |= INFO_FLAG_BURST;
 		if (pp->flags & FLAG_IBURST)
 		    ip->flags |= INFO_FLAG_IBURST;
+		if (pp->flags & FLAG_PRECONN)
+			ip->flags |= INFO_FLAG_PRECONN;
 		if (pp->status == CTL_PST_SEL_SYNCCAND)
 		    ip->flags |= INFO_FLAG_SEL_CANDIDATE;
 		if (pp->status >= CTL_PST_SEL_SYSPEER)
@@ -1325,6 +1327,8 @@ do_conf(
 		if (temp_cp.flags & CONF_FLAG_SKEY)
 			fl |= FLAG_SKEY;
 #endif	/* AUTOKEY */
+		if (temp_cp.flags & CONF_FLAG_PRECONN)
+			fl |= FLAG_PRECONN;
 		if (client_v6_capable && temp_cp.v6_flag) {
 			AF(&peeraddr) = AF_INET6;
 			SOCK_ADDR6(&peeraddr) = temp_cp.peeraddr6; 

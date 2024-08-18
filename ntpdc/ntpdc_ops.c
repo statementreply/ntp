@@ -565,6 +565,10 @@ print_pflag(
 		fprintf(fp, "%s prefer", dlim);
 		dlim = comma;
 	}
+	if (flags & INFO_FLAG_PRECONN) {
+		fprintf(fp, "%s preconn", dlim);
+		dlim = comma;
+	}
 	if (flags & INFO_FLAG_IBURST) {
 		fprintf(fp, "%s iburst", dlim);
 		dlim = comma;
@@ -1362,6 +1366,8 @@ again:
 			flags |= CONF_FLAG_BURST;
 		else if (STREQ(pcmd->argval[items].string, "iburst"))
 			flags |= CONF_FLAG_IBURST;
+		else if (STREQ(pcmd->argval[items].string, "preconn"))
+			flags |= CONF_FLAG_PRECONN;
 		else if (!refc && STREQ(pcmd->argval[items].string, "keyid"))
 			numtyp = 1;
 		else if (!refc && STREQ(pcmd->argval[items].string, "version"))

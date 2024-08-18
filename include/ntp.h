@@ -107,6 +107,7 @@ typedef char s_char;
 #define	NTP_MAXPOLL	17	/* log2 max poll interval (~36 h) */
 #define	NTP_RETRY	3	/* max packet retries */
 #define	NTP_MINPKT	2	/* guard time (s) */
+#define NTP_PRECONN 2	/* packets in preconn */
 
 /*
  * Clock filter algorithm tuning parameters
@@ -351,6 +352,7 @@ struct peer {
 	u_long	epoch;		/* reference epoch */
 	int	burst;		/* packets remaining in burst */
 	int	retry;		/* retry counter */
+	int	preconn;	/* preconnect counter */
 	int	flip;		/* interleave mode control */
 	double	filter_delay[NTP_SHIFT]; /* delay shift register */
 	double	filter_offset[NTP_SHIFT]; /* offset shift register */
@@ -473,6 +475,7 @@ struct peer {
 #define FLAG_TSTAMP_PPS	0x10000	/* PPS source provides absolute timestamp */
 #define FLAG_LOOPNONCE	0x20000	/* Use a nonce for the loopback test */
 #define FLAG_DISABLED	0x40000	/* peer is being torn down */
+#define FLAG_PRECONN	0x80000000	/* preconnect mode */
 
 /*
  * Definitions for the clear() routine.  We use memset() to clear
@@ -801,6 +804,7 @@ struct mon_data {
 	endpt *		lcladr;	/* address on which this arrived */
 	l_fp		first;		/* first time seen */
 	l_fp		last;		/* last time seen */
+	l_fp		last_n[NTP_PRECONN];	/* last NTP_PRECONN times seen */
 	int		leak;		/* leaky bucket accumulator */
 	int		count;		/* total packet count */
 	u_short		flags;		/* restrict flags */

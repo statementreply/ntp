@@ -4372,6 +4372,10 @@ peerflag_bits(
 			peerflags |= FLAG_PREEMPT;
 			break;
 
+		case T_Preconn:
+			peerflags |= FLAG_PRECONN;
+			break;
+
 		case T_Prefer:
 			peerflags |= FLAG_PREFER;
 			break;
