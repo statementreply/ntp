@@ -487,7 +487,10 @@ transmit(
 	 */
 	if ((peer->flags & FLAG_PRECONN) && peer->hmode != MODE_BCLIENT) {
 		peer->preconn++;
-		if (peer->preconn > 1) {
+		if (peer->preconn > NTP_PRECONN) {
+			peer->preconn = 1;
+		}
+		if (peer->preconn < NTP_PRECONN) {
 			peer->outdate = current_time;
 			peer_xmit(peer);
 			return;
